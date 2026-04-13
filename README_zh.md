@@ -24,7 +24,7 @@ Movie-Knowledge-Graph-Analysis/
 │   ├── data_analysis.py        # 独立的分析报表函数
 │   ├── io_utils.py             # CSV 导出工具（Neo4j / Power BI）
 │   └── main.py                 # 管线入口脚本
-├── neo4j/
+├── cypher/
 │   ├── schema.cypher               # 约束与索引
 │   ├── import_nodes.cypher          # LOAD CSV — 创建节点
 │   ├── import_relationships.cypher  # LOAD CSV — 创建关系
