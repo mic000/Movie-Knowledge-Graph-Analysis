@@ -24,7 +24,7 @@ Movie-Knowledge-Graph-Analysis/
 │   ├── data_analysis.py        # Standalone analysis report functions
 │   ├── io_utils.py             # CSV export utilities (Neo4j / Power BI)
 │   └── main.py                 # Pipeline orchestrator (entry point)
-├── neo4j/
+├── cypher/
 │   ├── schema.cypher               # Constraints & indexes
 │   ├── import_nodes.cypher          # LOAD CSV — create nodes
 │   ├── import_relationships.cypher  # LOAD CSV — create relationships
