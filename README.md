@@ -1,6 +1,6 @@
 # Movie Knowledge Graph Analysis
 
-**🇨🇳 [中文版](README_zh.md)**
+**[中文版](README_zh.md)**
 
 A PySpark ETL pipeline that cleans the [MovieLens](https://grouplens.org/datasets/movielens/) dataset and exports structured CSVs for **Neo4j** knowledge graph construction and **Power BI** visual analytics.
  
