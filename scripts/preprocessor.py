@@ -15,7 +15,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 spark = SparkSession.builder.appName("MovieLens_Cleaning").getOrCreate()
 
 
-# 1. Data Loading
+# 1. data Loading
 def load_csv(relative_path):
     """Load a CSV using a path relative to the project root."""
     abs_path = os.path.join(PROJECT_ROOT, relative_path)
