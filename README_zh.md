@@ -31,8 +31,7 @@ Movie-Knowledge-Graph-Analysis/
 │   └── queries.cypher               # 示例分析查询
 ├── output/                     # 运行时生成
 │   ├── neo4j/                  # 6 个 CSV，供 Neo4j LOAD CSV 使用
-│   ├── powerbi/                # 3 个宽表 CSV，供 Power BI 使用
-│   └── exploration_log.txt     # 完整管线日志（含分析结果）
+│   └── powerbi/                # 3 个宽表 CSV，供 Power BI 使用
 ├── .gitignore
 ├── requirements.txt
 ├── README.md                   # 英文说明
