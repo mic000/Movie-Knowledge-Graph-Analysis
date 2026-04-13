@@ -31,8 +31,7 @@ Movie-Knowledge-Graph-Analysis/
 │   └── queries.cypher               # Sample analytical queries
 ├── output/                     # Generated at runtime
 │   ├── neo4j/                  # 6 CSVs for Neo4j LOAD CSV
-│   ├── powerbi/                # 3 wide-table CSVs for Power BI
-│   └── exploration_log.txt     # Full pipeline log with analysis results
+│   └──  powerbi/                # 3 wide-table CSVs for Power BI
 ├── .gitignore
 ├── requirements.txt
 ├── README.md
