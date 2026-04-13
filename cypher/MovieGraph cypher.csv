@@ -1,0 +1,50 @@
+name,description,query,id,parentId,isFolder
+MovieFolder,,,0,,true
+" 先建约束（避免重复）",,"CREATE CONSTRAINT user_id IF NOT EXISTS
+FOR (u:User) REQUIRE u.userId IS UNIQUE;
+
+CREATE CONSTRAINT movie_id IF NOT EXISTS
+FOR (m:Movie) REQUIRE m.movieId IS UNIQUE;
+
+CREATE CONSTRAINT genre_name IF NOT EXISTS
+FOR (g:Genre) REQUIRE g.name IS UNIQUE;",1,0,false
+get working path， save import document,,"SHOW SETTINGS YIELD name, value WHERE name IN ['dbms.security.allow_csv_import_from_file_urls', 'server.directories.import', 'dbms.directories.import']RETURN name, value;",2,0,false
+导入 Nodes,,"LOAD CSV WITH HEADERS FROM 'file:///movies_node.csv' AS row MERGE (m:Movie {movieId: toInteger(row.movieId)}) SET m.title = row.title, m.release_year = toInteger(row.release_year);
+
+LOAD CSV WITH HEADERS FROM 'file:///users_node.csv' AS row MERGE (u:User {userId: toInteger(row.userId)});
+
+LOAD CSV WITH HEADERS FROM 'file:///genres_node.csv' AS row MERGE (g:Genre {name: row.genre});",3,0,false
+导入 Relationships,,"LOAD CSV WITH HEADERS FROM 'file:///movie_genre_rel.csv' AS row MATCH (m:Movie {movieId: toInteger(row.movieId)}) MATCH (g:Genre {name: row.genre}) MERGE (m)-[:HAS_GENRE]->(g);
+
+LOAD CSV WITH HEADERS FROM 'file:///ratings_rel.csv' AS row MATCH (u:User {userId: toInteger(row.userId)}) MATCH (m:Movie {movieId: toInteger(row.movieId)}) MERGE (u)-[r:RATED]->(m) SET r.rating = toFloat(row.rating), r.timestamp = toInteger(row.timestamp);",4,0,false
+测试图,,MATCH (n) RETURN n LIMIT 50;,5,0,false
+Louvain community detection,,"CALL gds.graph.project(
+  'movieGraph',
+  'Movie',
+  {
+    SIMILAR_TO: {
+      type: 'SIMILAR_TO',
+      orientation: 'UNDIRECTED',
+      properties: 'weight'
+    }
+  }
+);",6,0,false
+运行,,"CALL gds.louvain.write('movieGraph', {
+  relationshipWeightProperty: 'weight',
+  writeProperty: 'communityId'
+})
+YIELD communityCount, modularity;",7,0,false
+可视化 community,,"MATCH (m:Movie)-[r:SIMILAR_TO]-(n:Movie)
+WHERE m.communityId = 0 AND n.communityId = 0
+RETURN m, r, n
+LIMIT 100;",8,0,false
+社区大小,,"MATCH (m:Movie)
+RETURN m.communityId, count(*) AS size
+ORDER BY size DESC;",9,0,false
+社区的 genre,,"MATCH (m:Movie)-[:HAS_GENRE]->(g:Genre)
+RETURN m.communityId, g.name, count(*) AS freq
+ORDER BY m.communityId, freq DESC;",10,0,false
+top activies users rated,,"MATCH (u:User)-[r:RATED]->(m:Movie)
+RETURN u, r, m
+LIMIT 100;",11,0,false
+top actives rating and favour genre,,MATCH p=()-[:LIKES]->() RETURN p LIMIT 25;,12,0,false
