@@ -1,43 +1,76 @@
-from pyspark.sql.functions import col, count, avg, desc, asc
+from pyspark.sql.functions import col, count, avg, desc
 
-def run_report(movies_node, ratings_rel, movie_genre_rel, tags_rel):
-    print("\n" + "="*40)
-    print("      DATA INTELLIGENCE REPORT")
-    print("="*40)
+def print_row_counts(movies, ratings, tags, movie_genre_rel):
+    """Print row counts for all core DataFrames."""
+    print("\n=== Row Counts ===")
+    print(f"  movies:           {movies.count()}")
+    print(f"  ratings:          {ratings.count()}")
+    print(f"  tags:             {tags.count()}")
+    print(f"  movie-genre rows: {movie_genre_rel.count()}")
 
-    print("\n[1. Row Counts]")
-    print(f"Movies (Node):  {movies_node.count()}")
-    print(f"Ratings (Rel): {ratings_rel.count()}")
-    print(f"Tags (Rel):    {tags_rel.count()}")
-    print(f"Movie-Genre:   {movie_genre_rel.count()}")
 
-    print("\n[2. Distinct Counts]")
-    print(f"Distinct Users:   {ratings_rel.select('userId').distinct().count()}")
-    print(f"Distinct Genres:  {movie_genre_rel.select('genre').distinct().count()}")
-    print(f"Distinct Tags:    {tags_rel.select('tag').distinct().count()}")
+def print_distinct_counts(movies, ratings, tags, movie_genre_rel):
+    """Print distinct-value counts for key columns."""
+    print("\n=== Distinct Counts ===")
+    print(f"  distinct users in ratings:  {ratings.select('userId').distinct().count()}")
+    print(f"  distinct movies in ratings: {ratings.select('movieId').distinct().count()}")
+    print(f"  distinct movies in movies:  {movies.select('movieId').distinct().count()}")
+    print(f"  distinct genres:            {movie_genre_rel.select('genre').distinct().count()}")
+    print(f"  distinct tags:              {tags.select('tag').distinct().count()}")
 
-    print("\n[3. Movies per Genre - Top 10]")
-    movie_genre_rel.groupBy("genre").count().orderBy(desc("count")).show(10, truncate=False)
 
-    print("\n[4. Most Rated Movies - Top 10]")
-    ratings_rel.groupBy("movieId") \
+def show_movies_per_genre(movie_genre_rel, n=30):
+    """Show the number of movies in each genre, descending."""
+    print(f"\n=== Movies per Genre (top {n}) ===")
+    movie_genre_rel.groupBy("genre") \
+        .count() \
+        .orderBy(desc("count")) \
+        .show(n, truncate=False)
+
+
+def show_most_rated_movies(ratings, n=20):
+    """Show the most-rated movies by number of ratings."""
+    print(f"\n=== Most Rated Movies (top {n}) ===")
+    ratings.groupBy("movieId") \
         .agg(count("*").alias("num_ratings"), avg("rating").alias("avg_rating")) \
         .orderBy(desc("num_ratings")) \
-        .show(10, truncate=False)
+        .show(n, truncate=False)
 
-    print("\n[5. Most Active Users - Top 10]")
-    ratings_rel.groupBy("userId") \
+
+def show_most_active_users(ratings, n=20):
+    """Show the users who have submitted the most ratings."""
+    print(f"\n=== Most Active Users (top {n}) ===")
+    ratings.groupBy("userId") \
         .agg(count("*").alias("num_ratings")) \
         .orderBy(desc("num_ratings")) \
-        .show(10, truncate=False)
+        .show(n, truncate=False)
 
-    print("\n[6. Top Rated Movies (min 10 ratings)]")
-    ratings_rel.groupBy("movieId") \
+
+def show_top_avg_rating(ratings, min_ratings=10, n=20):
+    """Show movies with the highest average rating (minimum threshold applied)."""
+    print(f"\n=== Highest Avg Rating (≥{min_ratings} ratings, top {n}) ===")
+    ratings.groupBy("movieId") \
         .agg(avg("rating").alias("avg_rating"), count("*").alias("num_ratings")) \
-        .filter(col("num_ratings") >= 10) \
+        .filter(col("num_ratings") >= min_ratings) \
         .orderBy(desc("avg_rating")) \
-        .show(10, truncate=False)
+        .show(n, truncate=False)
 
-    print("\n" + "="*40)
-    print("      REPORT GENERATED SUCCESSFULLY")
-    print("="*40)
+
+def show_top_tags(tags, n=20):
+    """Show the most frequently used tags."""
+    print(f"\n=== Tag Usage (top {n}) ===")
+    tags.groupBy("tag") \
+        .count() \
+        .orderBy(desc("count")) \
+        .show(n, truncate=False)
+
+
+def run_all(movies_node, ratings_rel, tags_rel, movie_genre_rel):
+    """Run every analysis report in sequence."""
+    print_row_counts(movies_node, ratings_rel, tags_rel, movie_genre_rel)
+    print_distinct_counts(movies_node, ratings_rel, tags_rel, movie_genre_rel)
+    show_movies_per_genre(movie_genre_rel)
+    show_most_rated_movies(ratings_rel)
+    show_most_active_users(ratings_rel)
+    show_top_avg_rating(ratings_rel)
+    show_top_tags(tags_rel)
