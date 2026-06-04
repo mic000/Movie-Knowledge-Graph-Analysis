@@ -1,0 +1,253 @@
+name,description,query,id,parentId,isFolder
+Movie Recommendation Knowledge Graph,,,0,,true
+Total number of movies in the dataset,,"MATCH (m:Movie)
+RETURN count(m) AS total_movies;",1,0,false
+Total number of ratings,,"MATCH ()-[r:RATED]->()
+RETURN count(r) AS total_ratings;",2,0,false
+Top 10 most-rated movies,,"MATCH (:User)-[r:RATED]->(m:Movie)
+RETURN m.movieId AS movieId,
+       m.title AS title,
+       count(r) AS num_ratings
+ORDER BY num_ratings DESC
+LIMIT 10;",3,0,false
+Top 10 highest-rated movies,,"MATCH (:User)-[r:RATED]->(m:Movie)
+WITH m, count(r) AS num_ratings, avg(r.rating) AS avg_rating
+WHERE num_ratings >= 150
+RETURN m.movieId AS movieId,
+       m.title AS title,
+       num_ratings,
+       round(avg_rating, 2) AS avg_rating
+ORDER BY avg_rating DESC, num_ratings DESC
+LIMIT 10;",4,0,false
+Average rating across all movies,,"MATCH ()-[r:RATED]->()
+RETURN round(avg(r.rating), 2) AS overall_avg_rating;",5,0,false
+Movies with perfect 5.0 rating and number of ratings they got,,"MATCH (:User)-[r:RATED]->(m:Movie)
+WITH m, count(r) AS num_ratings, avg(r.rating) AS avg_rating
+WHERE avg_rating = 5.0 AND num_ratings > 1
+RETURN m.movieId AS movieId,
+       m.title AS title,
+       num_ratings,
+       round(avg_rating, 2) AS avg_rating
+ORDER BY num_ratings DESC, title;",6,0,false
+Movie with perfect rated,,"MATCH (:User)-[r:RATED]->(m:Movie)
+WITH m,
+     count(r) AS num_ratings,
+     avg(r.rating) AS avg_rating,
+     sum(CASE WHEN r.rating = 5.0 THEN 1 ELSE 0 END) AS num_top_rated
+WHERE num_top_rated > 0
+RETURN m.movieId AS movieId,
+       m.title AS title,
+       num_top_rated,
+       num_ratings,
+       round(avg_rating, 2) AS avg_rating
+ORDER BY num_top_rated DESC, num_ratings DESC
+LIMIT 20;",7,0,false
+Total number of users,,"MATCH (u:User)
+RETURN count(u) AS total_users;",8,0,false
+Average ratings per user,,"MATCH (u:User)-[r:RATED]->()
+WITH u, count(r) AS num_ratings
+RETURN round(avg(num_ratings), 2) AS avg_ratings_per_user;",9,0,false
+" Top 5 of most active user ",,"MATCH (u:User)-[r:RATED]->()
+WITH u, count(r) AS num_ratings
+RETURN u.userId AS userId, num_ratings
+ORDER BY num_ratings DESC
+LIMIT 5;",10,0,false
+Last 5 least active user,,"MATCH (u:User)-[r:RATED]->()
+WITH u, count(r) AS num_ratings
+RETURN u.userId AS userId, num_ratings
+ORDER BY num_ratings ASC
+LIMIT 5;",11,0,false
+User activity distribution,,"MATCH (u:User)-[r:RATED]->()
+WITH u, count(r) AS num_ratings
+WITH CASE
+       WHEN num_ratings >= 1 AND num_ratings <= 20 THEN '1-20'
+       WHEN num_ratings >= 21 AND num_ratings <= 50 THEN '21-50'
+       WHEN num_ratings >= 51 AND num_ratings <= 100 THEN '51-100'
+       WHEN num_ratings >= 101 AND num_ratings <= 200 THEN '101-200'
+       ELSE '200+'
+     END AS activity_bucket
+RETURN activity_bucket, count(*) AS num_users
+ORDER BY activity_bucket;",12,0,false
+Percentage of power users (200+ ratings),,"MATCH (u:User)-[r:RATED]->()
+WITH u, count(r) AS num_ratings
+WITH count(*) AS total_users,
+     sum(CASE WHEN num_ratings >= 200 THEN 1 ELSE 0 END) AS power_users
+RETURN total_users,
+       power_users,
+       round(100.0 * power_users / total_users, 2) AS power_user_pct;",13,0,false
+Total number of unique genres,,"MATCH (g:Genre)
+RETURN count(g) AS total_genres;",14,0,false
+Movies per genre,,"MATCH (m:Movie)-[h:HAS_GENRE]->(g:Genre)
+RETURN g AS genre, count(DISTINCT m) AS movie_count
+ORDER BY movie_count DESC;",15,0,false
+Top 9 Most Popular Genres and Their Highly Rated Movies,,"MATCH (m:Movie)-[:HAS_GENRE]->(g:Genre)
+WITH g, count(DISTINCT m) AS movie_count
+ORDER BY movie_count DESC
+LIMIT 9
+
+MATCH (m:Movie)-[hg:HAS_GENRE]->(g)
+MATCH (:User)-[r:RATED]->(m)
+WITH g, hg, m, count(r) AS num_ratings, avg(r.rating) AS avg_rating
+WHERE num_ratings > 50 AND avg_rating > 4.0
+RETURN g, hg, m,
+       round(avg_rating, 2) AS avg_rating,
+       num_ratings
+ORDER BY g, avg_rating DESC, num_ratings DESC;",16,0,false
+Ratings per genre (total engagement),,"MATCH (:User)-[r:RATED]->(m:Movie)-[:HAS_GENRE]->(g:Genre)
+RETURN g AS genre,
+       count(r) AS total_ratings
+ORDER BY total_ratings DESC;",17,0,false
+Average rating per genre,,"MATCH (:User)-[r:RATED]->(m:Movie)-[:HAS_GENRE]->(g:Genre)
+RETURN g AS genre,
+       round(avg(r.rating), 2) AS avg_rating,
+       count(r) AS total_ratings
+ORDER BY avg_rating DESC;",18,0,false
+Top 5 of most popular genre,,"MATCH (m:Movie)-[:HAS_GENRE]->(g:Genre)
+RETURN g AS genre,
+       count(m) AS movie_count
+ORDER BY movie_count DESC
+LIMIT 5;",19,0,false
+Highest rated genre (by average rating),,"MATCH (:User)-[r:RATED]->(m:Movie)-[:HAS_GENRE]->(g:Genre)
+WITH g, avg(r.rating) AS avg_rating, count(r) AS total_ratings
+WHERE total_ratings >= 50
+RETURN g AS genre,
+       round(avg_rating, 2) AS avg_rating,
+       total_ratings
+ORDER BY avg_rating DESC
+LIMIT 1;",20,0,false
+Multi-genre movies count (movies tagged with 3+ genres),,"MATCH (m:Movie)-[:HAS_GENRE]->(g:Genre)
+WITH m, count(g) AS genre_count
+WHERE genre_count >= 3
+RETURN count(m) AS multi_genre_movie_count;",21,0,false
+Shared movies count between sample user pairs,,"MATCH (u1:User {userId: 4})-[r1:RATED]->(m:Movie)<-[r2:RATED]-(u2:User {userId: 444})
+RETURN u1.userId AS user1,
+       u2.userId AS user2,
+       count(m) AS shared_movies;",22,0,false
+Cosine similarity score for sample user pairs,,"MATCH (u1:User {userId: 4})-[r1:RATED]->(m:Movie)<-[r2:RATED]-(u2:User {userId: 444})
+WITH collect(r1.rating) AS r1s, collect(r2.rating) AS r2s
+WITH reduce(dot = 0.0, i IN range(0, size(r1s)-1) | dot + r1s[i] * r2s[i]) AS dot_product,
+     sqrt(reduce(n1 = 0.0, x IN r1s | n1 + x * x)) AS norm1,
+     sqrt(reduce(n2 = 0.0, x IN r2s | n2 + x * x)) AS norm2
+RETURN round(dot_product / (norm1 * norm2), 4) AS cosine_similarity;",23,0,false
+Most popular genre movie rated by users,,"MATCH (m:Movie)-[:HAS_GENRE]->(g:Genre)
+WITH g, count(DISTINCT m) AS movie_count
+ORDER BY movie_count DESC
+
+MATCH (u:User)-[r:RATED]->(m:Movie)-[hg:HAS_GENRE]->(g)
+WHERE r.rating >= 4.0
+RETURN u, r, m, hg, g
+LIMIT 80;",24,0,false
+Rating distribution curve (0.5 to 5.0),,"MATCH ()-[r:RATED]->()
+RETURN r.rating AS rating,
+       count(*) AS frequency
+ORDER BY rating;",25,0,false
+"Side-by-side comparison of total movies, users, ratings",,"MATCH (m:Movie)
+WITH count(m) AS total_movies
+MATCH (u:User)
+WITH total_movies, count(u) AS total_users
+MATCH ()-[r:RATED]->()
+RETURN total_movies, total_users, count(r) AS total_ratings;",26,0,false
+Genre ranking comparison,,"MATCH (:User)-[r:RATED]->(m:Movie)-[:HAS_GENRE]->(g:Genre)
+RETURN g AS genre,
+       count(r) AS total_ratings,
+       round(avg(r.rating), 2) AS avg_rating
+ORDER BY total_ratings DESC;",27,0,false
+Top movie ranking comparison,,"MATCH (:User)-[r:RATED]->(m:Movie)
+RETURN m.movieId AS movieId,
+       m.title AS title,
+       count(r) AS num_ratings,
+       round(avg(r.rating), 2) AS avg_rating
+ORDER BY num_ratings DESC
+LIMIT 20;",28,0,false
+111Top-N recommended movies for a sample user,,"MATCH (u:User {userId: 148})-[r:RATED]->(seen:Movie)-[:HAS_GENRE]->(g:Genre)<-[:HAS_GENRE]-(rec:Movie)
+WHERE r.rating >= 4.0
+  AND NOT EXISTS {
+    MATCH (u)-[:RATED]->(rec)
+  }
+WITH rec, count(DISTINCT g) AS shared_genres
+RETURN rec.movieId AS movieId,
+       rec.title AS title,
+       shared_genres
+ORDER BY shared_genres DESC, title
+LIMIT 10;",29,0,false
+222Top-N recommended movies for a sample user1,,"MATCH (u:User {userId: 148})-[r:RATED]->(seen:Movie)-[:HAS_GENRE]->(g:Genre)
+WHERE r.rating >= 4.0
+WITH u, g, count(*) AS preference_strength
+MATCH (rec:Movie)-[:HAS_GENRE]->(g)
+WHERE NOT EXISTS {
+  MATCH (u)-[:RATED]->(rec)
+}
+WITH rec, sum(preference_strength) AS recommendation_score
+RETURN rec.movieId AS movieId,
+       rec.title AS title,
+       recommendation_score
+ORDER BY recommendation_score DESC, title
+LIMIT 10;",30,0,false
+Least active user recommdiation,,"MATCH (u:User)-[r:RATED]->()
+WITH u, count(r) AS num_ratings
+WHERE num_ratings = 20
+WITH collect(u) AS activeUsers
+
+MATCH (u:User)-[r:RATED]->(m:Movie)-[hg:HAS_GENRE]->(g:Genre)
+WHERE u IN activeUsers AND r.rating >= 4.5
+RETURN u, r, m, hg, g;",31,0,false
+"431 inactive user recommdiation ",,"MATCH (u:User {userId: 431})-[r:RATED]->(seen:Movie)-[sg:HAS_GENRE]->(g:Genre)
+WHERE r.rating >= 4.5
+WITH u, g,
+     collect(DISTINCT {movie: seen, ratingRel: r, genreRel: sg})[0..2] AS liked_movies,
+     count(DISTINCT seen) AS preference_strength
+
+MATCH (rec:Movie)-[hg:HAS_GENRE]->(g)
+WHERE NOT EXISTS {
+  MATCH (u)-[:RATED]->(rec)
+}
+
+WITH u, g, liked_movies, rec, hg, preference_strength
+ORDER BY preference_strength DESC, rec.title
+
+WITH u, g, liked_movies,
+     collect(DISTINCT {movie: rec, rel: hg, score: preference_strength})[0..5] AS recs
+
+UNWIND liked_movies AS liked
+UNWIND recs AS x
+
+RETURN u,
+       liked.ratingRel,
+       liked.movie,
+       liked.genreRel,
+       g,
+       x.rel,
+       x.movie",32,0,false
+most active users connect through shared highly-rated movies and genres,,"MATCH (u:User)-[r:RATED]->()
+WITH u, count(r) AS num_ratings
+ORDER BY num_ratings DESC
+LIMIT 10
+WITH collect(u) AS activeUsers
+
+MATCH (u:User)-[r:RATED]->(m:Movie)-[hg:HAS_GENRE]->(g:Genre)
+WHERE u IN activeUsers AND r.rating >= 4.5
+
+RETURN u, r, m, hg, g;",33,0,false
+highly active user’s movie taste look like across genres,,"MATCH (u:User {userId: 606})-[r:RATED]->(m:Movie)-[hg:HAS_GENRE]->(g:Genre)
+WHERE r.rating >= 4.8
+RETURN u, r, m, hg, g;",34,0,false
+top 10 most-rated movies share genres with each other,,"MATCH (:User)-[r:RATED]->(m:Movie)
+WITH m, count(r) AS num_ratings
+ORDER BY num_ratings DESC
+LIMIT 10
+WITH collect(m) AS topMovies
+
+MATCH (m1:Movie)-[h1:HAS_GENRE]->(g:Genre)<-[h2:HAS_GENRE]-(m2:Movie)
+WHERE m1 IN topMovies AND m2 IN topMovies AND id(m1) < id(m2)
+RETURN m1,h1, g, h2, m2;",35,0,false
+"genres dominate user preferences, and genre popularity comparsion",,"MATCH (:User)-[r:RATED]->(m:Movie)-[:HAS_GENRE]->(g:Genre)
+WITH g, count(r) AS total_ratings, avg(r.rating) AS avg_rating
+ORDER BY total_ratings DESC
+LIMIT 5
+
+MATCH (m:Movie)-[hg:HAS_GENRE]->(g)
+MATCH (:User)-[r:RATED]->(m)
+WITH g, hg, m, count(r) AS num_ratings, avg(r.rating) AS movie_avg
+WHERE num_ratings >= 20
+RETURN g, hg, m, round(movie_avg, 2) AS avg_rating, num_ratings
+ORDER BY g.genre, avg_rating DESC, num_ratings DESC;",36,0,false
